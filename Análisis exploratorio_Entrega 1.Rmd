@@ -309,6 +309,20 @@ ggplot(movies, aes(x = as.numeric(budget), y = revenue)) +
        y = "Ingresos") +
   theme_minimal()
 
+# 4.12  ¿Se asocian ciertos meses de lanzamiento con mejores ingresos?
+
+movies$releaseMonth <- as.numeric(substr(movies$releaseDate, 6, 7))
+
+
+monthly_revenue <- movies %>%
+  group_by(releaseMonth) %>%
+  summarise(total_revenue = sum(revenue, na.rm = TRUE),
+            avg_revenue = mean(revenue, na.rm = TRUE))
+
+
+# Ver los resultados
+print(months)
+
 
 ```
 ```{r}
@@ -336,4 +350,32 @@ monthly_revenue <- movies %>%
 print(months)
 
 
+
+#4.13. ¿En qué meses se han visto los lanzamientos con mejores ingresos? ¿cuantas películas, en promedio, se han lanzado por mes?
+
+#El total seria
+count_movie_month_total <- movies %>%
+  group_by(releaseMonth) %>%
+  summarise(movie_count = n())
+
+print(count_movie_month_total)
+
+# El promedio seria
+movies$releaseYear <- as.numeric(substr(movies$releaseDate, 1, 4))
+count_movie_month <- movies %>%
+  group_by(releaseMonth, releaseYear) %>%
+  summarise(movie_count = n(), .groups = 'drop')
+
+
+# Calcular el promedio de películas por mes
+average_movies_per_month <- count_movie_month %>%
+  group_by(releaseMonth) %>%
+  summarise(avg_movie_count = mean(movie_count))
+
+# Ver los resultados
+print(count_movie_month)
+print(average_movies_per_month)
+
+
+# 4.14. ¿Cómo se correlacionan las calificaciones con el éxito comercial?
 ```
