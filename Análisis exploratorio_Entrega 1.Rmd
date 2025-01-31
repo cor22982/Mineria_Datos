@@ -8,6 +8,7 @@ date: "2025-01-31"
 # Cargar librerías necesarias
 library(dplyr)
 library(ggplot2)
+library(tidyr)
 library(nortest)
 
 # Cargar el archivo CSV (ajusta la ruta si es necesario)
@@ -240,5 +241,99 @@ ggplot(actors_per_year, aes(x = releaseYear, y = avg_actors)) +
        x = "Año",
        y = "Promedio de Actores") +
   theme_minimal()
-```
 
+# 4.9 ¿Es posible que la cantidad de hombres y mujeres en el reparto influya en la popularidad y los ingresos de las películas?
+
+# Primero obtendremos la relacion entre hombres e ingresos.
+
+###########################################
+ggplot(movies, aes(x = as.numeric(castMenAmount), y = revenue)) +
+  geom_point(alpha = 0.5, color = "green") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Relación entre la cantidad de actores hombres y los ingresos",
+       x = "Cantidad de Actores Hombres",
+       y = "Ingresos") +
+  scale_x_continuous(limits = c(0, 100)) + 
+  theme_minimal()
+
+#Obtendremos 
+
+# Primero obtendremos la relacion entre mujeres e ingresos.
+
+ggplot(movies, aes(x = as.numeric(castWomenAmount), y = revenue)) +
+  geom_point(alpha = 0.5, color = "pink") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Relación entre la cantidad de actores mujeres y los ingresos",
+       x = "Cantidad de Actores Mujeres",
+       y = "Ingresos") +
+  scale_x_continuous(limits = c(0, 100))+
+  theme_minimal()
+
+# Ahora obtendremos la popularidad de Mujeres
+ggplot(movies, aes(x = as.numeric(castMenAmount), y = popularity)) +
+  geom_point(alpha = 0.5, color = "green") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Relación entre la cantidad de actores hombres y los ingresos",
+       x = "Cantidad de Actores Hombres",
+       y = "Popularidad") +
+  scale_x_continuous(limits = c(0, 100)) +
+  theme_minimal()
+#Ahora obtendremos la popularidad.de Hombres
+
+ggplot(movies, aes(x = as.numeric(castWomenAmount), y = popularity)) +
+  geom_point(alpha = 0.5, color = "pink") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Relación entre la cantidad de actores mujeres y los ingresos",
+       x = "Cantidad de Actores Mujeres",
+       y = "Popularidad") +
+    scale_x_continuous(limits = c(0, 100)) +  # Limitar el rango en el eje X
+  theme_minimal()
+
+
+#. 4.10 ¿Quiénes son los directores que hicieron las 20 películas mejor calificadas?
+
+top_20_movies <- movies %>%
+  filter(director != "") %>%
+  arrange(desc(voteAvg)) %>%
+  head(20) %>%
+  select(title, voteAvg, director)
+print("20 peliculas mas votas y sus directores")
+print(top_20_movies)
+
+#. 4.11 ¿Cómo se correlacionan los presupuestos con los ingresos?
+ggplot(movies, aes(x = as.numeric(budget), y = revenue)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Relación entre el presupuesto e ingresos ",
+       x = "Presupuesto",
+       y = "Ingresos") +
+  theme_minimal()
+
+
+```
+```{r}
+# Cargar librerías necesarias
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(nortest)
+
+# Cargar el archivo CSV (ajusta la ruta si es necesario)
+movies <- read.csv("movies.csv", stringsAsFactors = FALSE)
+
+# 4.12  ¿Se asocian ciertos meses de lanzamiento con mejores ingresos?
+
+movies$releaseMonth <- as.numeric(substr(movies$releaseDate, 6, 7))
+
+
+monthly_revenue <- movies %>%
+  group_by(releaseMonth) %>%
+  summarise(total_revenue = sum(revenue, na.rm = TRUE),
+            avg_revenue = mean(revenue, na.rm = TRUE))
+
+
+# Ver los resultados
+print(months)
+
+
+```
