@@ -1,0 +1,244 @@
+---
+title: "Análisis exploratorio"
+output: html_document
+date: "2025-01-31"
+---
+
+```{r}
+# Cargar librerías necesarias
+library(dplyr)
+library(ggplot2)
+library(nortest)
+
+# Cargar el archivo CSV (ajusta la ruta si es necesario)
+movies <- read.csv("movies.csv", stringsAsFactors = FALSE)
+
+# Haga una exploración rápida de sus datos, para eso haga un resumen de su conjunto de datos
+summary(movies)
+str(movies)
+
+# Diga el tipo de cada una de las variables (cualitativa ordinal o nominal, cuantitativa continua, cuantitativa discreta) 
+
+# Función para clasificar las variables
+clasificar_variable <- function(columna) {
+  valores_unicos <- length(unique(columna))
+  tipo_dato <- class(columna)
+  
+  if (tipo_dato %in% c("integer", "numeric")) {
+    if (valores_unicos < 20) {
+      return("Cuantitativa Discreta")
+    } else {
+      return("Cuantitativa Continua")
+    }
+  } else {
+    if (valores_unicos < 20) {
+      return("Cualitativa Ordinal")
+    } else {
+      return("Cualitativa Nominal")
+    }
+  }
+}
+
+# Aplicar la clasificación a todas las variables
+tipos_variables <- data.frame(
+  Variable = names(movies),
+  Tipo = sapply(movies, clasificar_variable)
+)
+
+# Mostrar los resultados
+print(tipos_variables)
+
+# Investigue si las variables cuantitativas siguen una distribución normal y haga una tabla de frecuencias de las variables cualitativas. Explique todos los resultados.  
+
+# Evaluar normalidad en variables cuantitativas con prueba de Lilliefors y visualización
+distribution_analysis <- function(var_name) {
+  cat("\nAnálisis de normalidad para:", var_name, "\n")
+  data <- na.omit(movies[[var_name]])
+  if (length(data) > 5000) {
+    data <- sample(data, 5000)  # Tomar muestra si hay más de 5000 elementos
+  }
+  
+  # Prueba de normalidad de Lilliefors
+  print(lillie.test(data))
+  
+  # Histogramas y QQ-Plot
+  ggplot(data.frame(value = data), aes(x = value)) +
+    geom_histogram(bins = 30, fill = "blue", alpha = 0.5) +
+    ggtitle(paste("Histograma de", var_name))
+  
+  qqnorm(data, main = paste("QQ-Plot de", var_name))
+  qqline(data, col = "red")
+}
+
+quant_vars <- c("budget", "revenue", "runtime", "voteAvg", "voteCount", "actorsAmount")
+lapply(quant_vars, distribution_analysis)
+
+# Tabla de frecuencias de variables cualitativas
+categorical_vars <- c("genres", "productionCompany", "productionCountry")
+for (cat_var in categorical_vars) {
+  print(cat_var)
+  print(table(movies[[cat_var]]))
+}
+
+# 4.	Responda las siguientes preguntas:
+
+# 4.1. ¿Cuáles son las 10 películas que contaron con más presupuesto? 
+top_budget_movies <- movies %>%
+  select(title, budget) %>%
+  arrange(desc(budget)) %>%
+  head(10)
+
+# Mostrar los resultados
+top_budget_movies
+
+# 4.2. ¿Cuáles son las 10 películas que más ingresos tuvieron? 
+top_revenue_movies <- movies %>%
+  select(title, revenue) %>%
+  arrange(desc(revenue)) %>%
+  head(10)
+
+# Mostrar los resultados
+print(top_revenue_movies)
+
+# 4.3. ¿Cuál es la película que más votos tuvo? 
+most_voted_movie <- movies %>%
+  select(title, voteCount) %>%
+  arrange(desc(voteCount)) %>%
+  head(1)
+
+# Mostrar el resultado
+print(most_voted_movie)
+
+# 4.4. ¿Cuál es la peor película de acuerdo a los votos de todos los usuarios? 
+worst_movie <- movies %>%
+  select(title, voteAvg) %>%
+  arrange(voteAvg) %>%
+  head(1)
+
+# Mostrar el resultado
+print(worst_movie)
+
+# 4.5. ¿Cuántas películas se hicieron en cada año? ¿En qué año se hicieron más películas? Haga un gráfico de barras 
+
+# Extraer el año de la columna releaseDate
+movies$releaseYear <- as.numeric(substr(movies$releaseDate, 1, 4))
+
+# Contar cuántas películas se hicieron en cada año
+movies_per_year <- movies %>%
+  group_by(releaseYear) %>%
+  summarise(count = n()) %>%
+  na.omit()
+
+# Encontrar el año con más películas
+max_movies_year <- movies_per_year %>%
+  filter(count == max(count))
+
+# Mostrar la cantidad de películas por año
+print(movies_per_year)
+
+# Mostrar el año con más películas
+print(max_movies_year)
+
+# Gráfico de barras de la cantidad de películas por año
+ggplot(movies_per_year, aes(x = releaseYear, y = count)) +
+  geom_bar(stat = "identity", fill = "blue", alpha = 0.7) +
+  labs(title = "Cantidad de películas por año",
+       x = "Año",
+       y = "Cantidad de películas") +
+  theme_minimal()
+
+#4.6 ¿Cuál es el género principal de las 20 películas más recientes? ¿Cuál es el género principal que predomina en el conjunto de datos? Represéntelo usando un gráfico. ¿A qué género principal pertenecen las películas más largas? 
+
+# # Extraer el año de la columna releaseDate
+movies$releaseYear <- as.numeric(substr(movies$releaseDate, 1, 4))
+
+# Obtener las 20 películas más recientes
+recent_movies <- movies %>%
+  arrange(desc(releaseYear)) %>%
+  head(20)
+
+# Identificar el género principal de las 20 películas más recientes
+recent_movies_genres <- table(recent_movies$genres)
+print(recent_movies_genres)
+
+# Identificar el género más frecuente en todo el conjunto de datos
+genre_distribution <- table(movies$genres)
+most_common_genre <- names(sort(genre_distribution, decreasing = TRUE)[1])
+print(paste("El género más frecuente en el conjunto de datos es:", most_common_genre))
+
+# Gráfico de distribución de géneros en el dataset
+genre_df <- as.data.frame(genre_distribution)
+ggplot(genre_df, aes(x = reorder(Var1, Freq), y = Freq)) +
+  geom_bar(stat = "identity", fill = "blue", alpha = 0.7) +
+  coord_flip() +
+  labs(title = "Distribución de géneros en el dataset",
+       x = "Género",
+       y = "Frecuencia") +
+  theme_minimal()
+
+# Identificar a qué género pertenecen las películas más largas
+longest_movies <- movies %>%
+  arrange(desc(runtime)) %>%
+  head(10)
+
+longest_movies_genres <- table(longest_movies$genres)
+print(longest_movies_genres)
+
+# 4.7 ¿Las películas de qué genero principal obtuvieron mayores ganancias? 
+
+# Verificar si las columnas necesarias existen
+if("budget" %in% names(movies) & "revenue" %in% names(movies)) {
+  
+  # Reemplazar valores NA con 0 en budget y revenue para evitar errores
+  movies$budget[is.na(movies$budget)] <- 0
+  movies$revenue[is.na(movies$revenue)] <- 0
+
+  # Calcular las ganancias (revenue - budget)
+  movies <- movies %>% mutate(profit = revenue - budget)
+
+  # Filtrar películas con datos de género no vacíos
+  movies_filtered <- movies %>% filter(genres != "")
+
+  # Agrupar por género y calcular la ganancia total de cada género
+  genre_profit <- movies_filtered %>%
+    group_by(genres) %>%
+    summarise(total_profit = sum(profit, na.rm = TRUE)) %>%
+    arrange(desc(total_profit))
+
+  # Mostrar el género con mayores ganancias
+  print(genre_profit)
+  print(paste("El género con mayores ganancias es:", genre_profit$genres[1]))
+
+} else {
+  print("Las columnas 'budget' o 'revenue' no existen en el dataset.")
+}
+
+# 4.8 ¿La cantidad de actores influye en los ingresos de las películas?¿se han hecho películas con más actores en los últimos años? 
+
+# Análisis de la relación entre la cantidad de actores y los ingresos
+ggplot(movies, aes(x = actorsAmount, y = revenue)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "Relación entre la cantidad de actores y los ingresos",
+       x = "Cantidad de Actores",
+       y = "Ingresos") +
+  theme_minimal()
+
+# Extraer el año de la columna releaseDate
+movies$releaseYear <- as.numeric(substr(movies$releaseDate, 1, 4))
+
+# Agrupar por año y calcular el promedio de actores en las películas
+actors_per_year <- movies %>%
+  group_by(releaseYear) %>%
+  summarise(avg_actors = mean(actorsAmount, na.rm = TRUE))
+
+# Gráfico de evolución del número de actores en el tiempo
+ggplot(actors_per_year, aes(x = releaseYear, y = avg_actors)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Evolución del número de actores en las películas por año",
+       x = "Año",
+       y = "Promedio de Actores") +
+  theme_minimal()
+```
+
